@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Deteksi Ekspresi</title>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+    <style> body { text-align: center; font-family: sans-serif; } </style>
+  </head>
+  <body>
+    <h2>Ekspresi Kamu:</h2>
+    <p id="result">-</p>
+    <div id="webcam-container"></div>
+
+    <script type="text/javascript">
+      const URL = "https://teachablemachine.withgoogle.com/models/_j4ry02v1/"; // <-- ganti dengan link modelmu
+      let model, webcam;
+
+      async function init() {
+        const modelURL = URL + "model.json";
+        const metadataURL = URL + "metadata.json";
+
+        model = await tmImage.load(modelURL, metadataURL);
+        webcam = new tmImage.Webcam(200, 200, true);
+        await webcam.setup();
+        await webcam.play();
+        window.requestAnimationFrame(loop);
+
+        document.getElementById("webcam-container").appendChild(webcam.canvas);
+      }
+
+      async function loop() {
+        webcam.update();
+        const prediction = await model.predict(webcam.canvas);
+        const top = prediction.sort((a, b) => b.probability - a.probability)[0];
+
+        document.getElementById("result").innerText = top.className + " (" + (top.probability * 100).toFixed(1) + "%)";
+        
+        if (top.probability > 0.8) {
+          // kirim ekspresi ke MIT App Inventor
+          window.AppInventor && window.AppInventor.setWebViewString(top.className);
+        }
+
+        window.requestAnimationFrame(loop);
+      }
+
+      init();
+    </script>
+  </body>
+</html>
