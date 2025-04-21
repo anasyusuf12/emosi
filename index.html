@@ -1,55 +1,45 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Ekspresi Wajah</title>
+  <title>Ekspresi Detektor</title>
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+  <style>
+    body { text-align: center; font-family: sans-serif; }
+    canvas { margin-top: 10px; }
+  </style>
 </head>
 <body>
-  <video id="webcam" autoplay playsinline width="300" height="225"></video>
-  <script>
-    const URL = "https://teachablemachine.withgoogle.com/models/_j4ry02v1/"; // folder tempat model kamu berada
+  <h1>Deteksi Ekspresi</h1>
+  <div id="webcam-container"></div>
+  <script type="text/javascript">
+    const URL = "https://teachablemachine.withgoogle.com/models/_j4ry02v1/";
     let model, webcam, maxPredictions;
 
-    async function loadModel() {
+    async function startPrediction() {
       const modelURL = URL + "model.json";
       const metadataURL = URL + "metadata.json";
-      model = await tmImage.load(modelURL, metadataURL);
-      maxPredictions = model.getTotalClasses();
 
-      webcam = new tmImage.Webcam(300, 225, true);
+      model = await tmImage.load(modelURL, metadataURL);
+      webcam = new tmImage.Webcam(200, 200, true); // flip webcam
       await webcam.setup();
       await webcam.play();
       window.requestAnimationFrame(loop);
-
-      document.getElementById("webcam").appendChild(webcam.canvas);
+      document.getElementById("webcam-container").appendChild(webcam.canvas);
     }
 
     async function loop() {
       webcam.update();
-      await predict();
+      const prediction = await model.predict(webcam.canvas);
+      prediction.sort((a, b) => b.probability - a.probability);
+      const topResult = prediction[0].className;
+
+      // Kirim hasil ekspresi ke MIT App Inventor
+      if (window.AppInventor) {
+        AppInventor.setWebViewString(topResult);
+      }
+
       window.requestAnimationFrame(loop);
     }
-
-    async function predict() {
-      const prediction = await model.predict(webcam.canvas);
-      let highestProb = 0;
-      let predictedLabel = "";
-
-      for (let i = 0; i < prediction.length; i++) {
-        if (prediction[i].probability > highestProb) {
-          highestProb = prediction[i].probability;
-          predictedLabel = prediction[i].className;
-        }
-      }
-
-      // kirim hasil ke WebViewer
-      if (highestProb > 0.8) {
-        window.AppInventor && AppInventor.setWebViewString(predictedLabel);
-      }
-    }
-
-    loadModel();
   </script>
 </body>
 </html>
